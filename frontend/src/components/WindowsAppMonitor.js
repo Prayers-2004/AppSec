@@ -43,7 +43,6 @@ const WindowsAppMonitor = () => {
   const [lastNotificationId, setLastNotificationId] = useState(null);
   const [remainingAttempts, setRemainingAttempts] = useState(3);
   const [loginError, setLoginError] = useState('');
-  const [loginAttempts, setLoginAttempts] = useState({});
 
   // Create axios instance with base URL
   const api = axios.create({
@@ -349,45 +348,11 @@ const WindowsAppMonitor = () => {
   // Function to capture screenshot using html2canvas
   const captureScreenshot = async () => {
     try {
-      // Get the entire document's dimensions
-      const fullHeight = Math.max(
-        document.documentElement.clientHeight,
-        document.documentElement.scrollHeight,
-        document.documentElement.offsetHeight,
-        document.body.scrollHeight,
-        document.body.offsetHeight
-      );
-      const fullWidth = Math.max(
-        document.documentElement.clientWidth,
-        document.documentElement.scrollWidth,
-        document.documentElement.offsetWidth,
-        document.body.scrollWidth,
-        document.body.offsetWidth
-      );
-
-      // Create a canvas with full dimensions
-      const canvas = document.createElement('canvas');
-      canvas.width = fullWidth;
-      canvas.height = fullHeight;
-      const context = canvas.getContext('2d');
-
-      // Use html2canvas with full dimensions
-      const screenshot = await html2canvas(document.documentElement, {
-        width: fullWidth,
-        height: fullHeight,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: fullWidth,
-        windowHeight: fullHeight,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        scale: 1,
-        x: 0,
-        y: 0
-      });
-
-      return screenshot.toDataURL('image/png', 1.0);
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(document.body);
+      const dataUrl = canvas.toDataURL('image/png');
+      console.log('Screenshot captured successfully');
+      return dataUrl;
     } catch (error) {
       console.error('Error capturing screenshot:', error);
       return null;
@@ -458,36 +423,6 @@ const WindowsAppMonitor = () => {
       process_name: processName
     });
     setOpenDialog(true);
-  };
-
-  const handleLoginFailed = async (appName) => {
-    try {
-      setLoginAttempts(prev => {
-        const newAttempts = (prev[appName] || 0) + 1;
-        const maxAttempts = 3;
-        const remainingAttempts = maxAttempts - newAttempts;
-        
-        if (remainingAttempts <= 0) {
-          // Capture both screenshot and camera image when max attempts reached
-          Promise.all([
-            captureScreenshot(),
-            captureCameraImage()
-          ]).then(([screenshot, cameraImage]) => {
-            // Send both to backend
-            api.post('/api/monitor/windows-apps/login-failed', {
-              app_name: appName,
-              screenshot: screenshot,
-              camera_image: cameraImage,
-              max_attempts_reached: true
-            });
-          });
-        }
-        
-        return { ...prev, [appName]: newAttempts };
-      });
-    } catch (error) {
-      console.error('Error handling login failure:', error);
-    }
   };
 
   useEffect(() => {
