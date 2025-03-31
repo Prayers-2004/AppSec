@@ -1,5 +1,4 @@
-# AppSec - Application Security System
-
+# AppSec - App Intrusion Detection & Security System
 AppSec is a comprehensive security solution that provides an extra layer of protection for applications by implementing multi-factor authentication and real-time intruder detection.
 
 ## Features
